@@ -1,46 +1,54 @@
-import React from "react";
-import HeaderUser from "../../components/HeaderUser";
+import React from 'react';
+import { Box, Typography, Button, Paper, Grid, Divider, TextField } from '@mui/material';
 
-const UserDashboard: React.FC = () => {
+const Dashboard = () => {
   return (
-    <div className="min-h-screen bg-gray-100">
-      <HeaderUser />
+    <Box>
+      {/* Top Navigation Bar */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" p={2} bgcolor="#e0e0e0">
+        <TextField variant="outlined" size="small" placeholder="Search Cases" sx={{ width: 200 }} />
+        <Box display="flex" gap={2} alignItems="center">
+          <Typography fontWeight="bold">Lawyer LastName</Typography>
+          <Button>Log Out</Button>
+        </Box>
+      </Box>
 
-      <main className="px-8 py-6">
-        <h2 className="text-xl font-semibold mb-4">Your Most Recent Case</h2>
+      {/* Navigation Tabs */}
+      <Box display="flex" justifyContent="center" gap={4} bgcolor="#9e9e9e" py={1}>
+        <Button variant="text">My Cases</Button>
+        <Button variant="text">Categories</Button>
+        <Button variant="contained">Create New</Button>
+      </Box>
 
-        <div className="grid grid-cols-3 gap-6">
-          {/* Left: Case Info */}
-          <div className="col-span-1 bg-white p-6 rounded shadow">
-            <h3 className="text-lg font-bold mb-2">Lorem ipsum dolor sit amet</h3>
-            <p className="text-gray-600 mb-1">Date: 06/27/2025</p>
-            <p className="text-gray-600 mb-1">
-              Category: Contractual, Apology Act
-            </p>
-            <div className="mt-4 space-x-2">
-              <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                View
-              </button>
-              <button className="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400">
-                Edit
-              </button>
-            </div>
-          </div>
+      {/* Main Section */}
+      <Box display="flex" justifyContent="space-between" p={4} bgcolor="#bdbdbd">
+        {/* Left: Most Recent Case */}
+        <Box width="48%">
+          <Typography variant="h6" mb={2}>Your Most Recent Case</Typography>
+          <Paper elevation={2} sx={{ p: 2 }}>
+            <Typography fontWeight="bold">Lorem ipsum dolor sit amet</Typography>
+            <Typography variant="body2">05/07/2025</Typography>
+            <Typography variant="body2" mt={1}>Categories: consectetur adipiscing elit</Typography>
+            <Box display="flex" gap={2} mt={2}>
+              <Button variant="outlined">View</Button>
+              <Button variant="outlined">Edit</Button>
+            </Box>
+          </Paper>
+        </Box>
 
-          {/* Right: PDF Preview Placeholder */}
-          <div className="col-span-2 bg-white p-6 rounded shadow flex items-center justify-center">
-            <div className="text-center text-gray-500">
-              <p className="mb-2">PDF Preview</p>
-              <div className="w-full h-72 border rounded bg-gray-100 flex items-center justify-center">
-                <span className="text-gray-400">PDF Content Here</span>
-              </div>
-              <p className="mt-2">Page 1 of 3</p>
-            </div>
-          </div>
-        </div>
-      </main>
-    </div>
+        {/* Right: Placeholder Image */}
+        <Box width="48%" height={200} border={1} borderColor="#000" display="flex" justifyContent="center" alignItems="center">
+          <Typography variant="body2">Image Placeholder</Typography>
+        </Box>
+      </Box>
+
+      {/* Bottom Cards (Placeholders) */}
+      <Box display="flex" justifyContent="space-between" px={4} pb={4}>
+        <Paper elevation={2} sx={{ width: '48%', height: 100 }} />
+        <Paper elevation={2} sx={{ width: '48%', height: 100 }} />
+      </Box>
+    </Box>
   );
 };
 
-export default UserDashboard;
+export default Dashboard;
