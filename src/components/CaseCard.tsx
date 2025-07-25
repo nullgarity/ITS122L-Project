@@ -1,27 +1,34 @@
 import React from "react";
+import { Paper, Typography, Box, Button } from "@mui/material";
 
-type Props = {
+interface CaseCardProps {
   title: string;
-  dateFiled: string;
-  status: string;
-  onView?: () => void;
-};
+  date: string; 
+  lastUpdated: string; 
+  category: string;
+  onView: () => void;
+  onEdit: () => void;
+}
 
-const CaseCard: React.FC<Props> = ({ title, dateFiled, status, onView }) => {
+const CaseCard: React.FC<CaseCardProps> = ({
+  title,
+  date,
+  lastUpdated,
+  category,
+  onView,
+  onEdit,
+}) => {
   return (
-    <div className="bg-white p-4 rounded-lg shadow-md space-y-2">
-      <h4 className="font-semibold text-lg">{title}</h4>
-      <p className="text-sm text-gray-600">Filed: {dateFiled}</p>
-      <p className="text-sm text-gray-500">Status: {status}</p>
-      {onView && (
-        <button
-          onClick={onView}
-          className="mt-2 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-        >
-          View Case
-        </button>
-      )}
-    </div>
+    <Paper elevation={2} sx={{ p: 2, mb: 2 }}>
+      <Typography fontWeight="bold">{title}</Typography>
+      <Typography variant="body2">Created: {new Date(date).toLocaleDateString()}</Typography>
+      <Typography variant="body2">Updated: {new Date(lastUpdated).toLocaleString()}</Typography>
+      <Typography variant="body2" mt={1}>Category: {category}</Typography>
+      <Box display="flex" gap={2} mt={2}>
+        <Button variant="outlined" onClick={onView}>View</Button>
+        <Button variant="outlined" onClick={onEdit}>Edit</Button>
+      </Box>
+    </Paper>
   );
 };
 
