@@ -1,14 +1,18 @@
 import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import { BrowserRouter as Router, useRoutes } from 'react-router-dom';
+import routes from './routes';
+
+function AppRoutes() {
+  const element = useRoutes(routes);
+  return element ?? null;
+}
 
 function App() {
   return (
-    <div>
-      <h1>Welcome to </h1>
-      <p></p>
-    </div>
-  )
+    <Router>
+      <AppRoutes />
+    </Router>
+  );
 }
 
 export default App;

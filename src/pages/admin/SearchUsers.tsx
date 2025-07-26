@@ -1,6 +1,6 @@
 import React from 'react';
 
-const CategoryResults: React.FC = () => {
+const SearchUsers: React.FC = () => {
   return (
     <div>
       <h1>Admin Dashboard</h1>
@@ -8,4 +8,4 @@ const CategoryResults: React.FC = () => {
   );
 };
 
-export default CategoryResults;
+export default SearchUsers;
