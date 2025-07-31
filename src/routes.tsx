@@ -1,6 +1,6 @@
 import { RouteObject } from 'react-router-dom';
 
-import Login from './pages/Login';
+import LoginForm from './components/LoginForm';
 import UserDashboard from './pages/user/Dashboard';
 import CreateCase from './pages/user/CreateCase';
 import MyCases from './pages/user/MyCases';
@@ -21,7 +21,7 @@ import Searchusers from './pages/admin/SearchUsers';
 const routes: RouteObject[] = [
   {
     path: '/',
-    element: <Login />,
+    element: <LoginForm />,
   },
   {
     path: '/user',
