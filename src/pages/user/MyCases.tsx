@@ -1,48 +1,101 @@
-import React from 'react';
-import { Box, Typography, Button, Paper, TextField } from '@mui/material';
+// src/pages/user/MyCases.tsx
+import React, { useEffect, useState } from "react";
+import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
+import { db } from "../../services/firebase";
+import { getAuth } from "firebase/auth";
+import { Link } from "react-router-dom";
 
-const MyCases = () => {
+interface CaseItem {
+  id: string;
+  title: string;
+  category: string;
+  date: string;
+  status?: string;
+}
+
+const MyCases: React.FC = () => {
+  const [cases, setCases] = useState<CaseItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const auth = getAuth();
+  const user = auth.currentUser;
+
+  useEffect(() => {
+    const fetchCases = async () => {
+      if (!user) return;
+
+      try {
+        const q = query(
+          collection(db, "cases"),
+          where("userId", "==", user.uid),
+          orderBy("createdAt", "desc")
+        );
+
+        const querySnapshot = await getDocs(q);
+        const caseList: CaseItem[] = [];
+
+        querySnapshot.forEach((doc) => {
+          caseList.push({
+            id: doc.id,
+            ...(doc.data() as Omit<CaseItem, "id">),
+          });
+        });
+
+        setCases(caseList);
+      } catch (error) {
+        console.error("Error fetching cases:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCases();
+  }, [user]);
+
+  if (!user) return <p>Please log in to view your cases.</p>;
+
   return (
-    <Box>
-      {/* Top Navigation Bar */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" p={2} bgcolor="#e0e0e0">
-        <TextField variant="outlined" size="small" placeholder="Search Cases" sx={{ width: 200 }} />
-        <Box display="flex" gap={2} alignItems="center">
-          <Typography fontWeight="bold">Lawyer LastName</Typography>
-          <Button>Log Out</Button>
-        </Box>
-      </Box>
+    <div className="p-6 max-w-4xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">My Cases</h1>
 
-      {/* Navigation Tabs */}
-      <Box display="flex" justifyContent="center" gap={4} bgcolor="#9e9e9e" py={1}>
-        <Button variant="contained">My Cases</Button>
-        <Button variant="text">Categories</Button>
-        <Button variant="text">Create New</Button>
-      </Box>
+      {loading ? (
+        <p>Loading cases...</p>
+      ) : cases.length === 0 ? (
+        <p>No cases found.</p>
+      ) : (
+        <ul className="space-y-4">
+          {cases.map((item) => (
+            <li
+              key={item.id}
+              className="p-4 border rounded shadow-sm bg-white hover:bg-gray-50 transition"
+            >
+              <h2 className="text-lg font-semibold">{item.title}</h2>
+              <p className="text-sm text-gray-600">
+                {item.category} • {item.date}
+              </p>
+              <p className="text-sm text-blue-600 mt-1 capitalize">
+                Status: {item.status || "open"}
+              </p>
 
-      {/* Case List */}
-      <Box p={4} bgcolor="#bdbdbd">
-        <Typography variant="h6" mb={2}>My Cases</Typography>
-        <Paper elevation={2} sx={{ p: 2, mb: 2 }}>
-          <Typography fontWeight="bold">Case Title A</Typography>
-          <Typography variant="body2">05/06/2025</Typography>
-          <Typography variant="body2" mt={1}>Category: Criminal</Typography>
-          <Box display="flex" gap={2} mt={2}>
-            <Button variant="outlined">View</Button>
-            <Button variant="outlined">Edit</Button>
-          </Box>
-        </Paper>
-        <Paper elevation={2} sx={{ p: 2 }}>
-          <Typography fontWeight="bold">Case Title B</Typography>
-          <Typography variant="body2">04/22/2025</Typography>
-          <Typography variant="body2" mt={1}>Category: Civil</Typography>
-          <Box display="flex" gap={2} mt={2}>
-            <Button variant="outlined">View</Button>
-            <Button variant="outlined">Edit</Button>
-          </Box>
-        </Paper>
-      </Box>
-    </Box>
+              <div className="mt-2 flex gap-4">
+                <Link
+                  to={`/user/view-case/${item.id}`}
+                  className="text-sm text-blue-500 underline"
+                >
+                  View
+                </Link>
+                <Link
+                  to={`/user/manage-case/${item.id}`}
+                  className="text-sm text-green-500 underline"
+                >
+                  Manage
+                </Link>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 };
 
