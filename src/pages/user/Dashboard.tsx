@@ -21,6 +21,17 @@ const Dashboard = () => {
     navigate("/");
   };
 
+  const handleNavigation = (path: string) => {
+    navigate(path);
+  };
+
+  const handleSearch = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      const searchQuery = (event.target as HTMLInputElement).value;
+      navigate(`/user/search?q=${encodeURIComponent(searchQuery)}`);
+    }
+  };
+
   return (
     <Box>
       {/* Top Navigation Bar */}
@@ -34,8 +45,9 @@ const Dashboard = () => {
         <TextField
           variant="outlined"
           size="small"
-          placeholder="Search Cases"
-          sx={{ width: 200 }}
+          placeholder="Search Cases (Press Enter)"
+          sx={{ width: 250 }}
+          onKeyPress={handleSearch}
         />
         <Box display="flex" gap={2} alignItems="center">
           <Typography fontWeight="bold">
@@ -53,9 +65,27 @@ const Dashboard = () => {
         bgcolor="#9e9e9e"
         py={1}
       >
-        <Button variant="text">My Cases</Button>
-        <Button variant="text">Categories</Button>
-        <Button variant="contained">Create New</Button>
+        <Button
+          variant="text"
+          onClick={() => handleNavigation("/user/my-cases")}
+          sx={{ color: "white" }}
+        >
+          My Cases
+        </Button>
+        <Button
+          variant="text"
+          onClick={() => handleNavigation("/user/categories")}
+          sx={{ color: "white" }}
+        >
+          Categories
+        </Button>
+        <Button
+          variant="contained"
+          onClick={() => handleNavigation("/user/create-case")}
+          sx={{ bgcolor: "primary.main" }}
+        >
+          Create New
+        </Button>
       </Box>
 
       {/* Main Section */}
@@ -81,8 +111,18 @@ const Dashboard = () => {
               Start managing your cases here.
             </Typography>
             <Box display="flex" gap={2} mt={2}>
-              <Button variant="outlined">View Cases</Button>
-              <Button variant="outlined">Create New</Button>
+              <Button
+                variant="outlined"
+                onClick={() => handleNavigation("/user/my-cases")}
+              >
+                View Cases
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => handleNavigation("/user/create-case")}
+              >
+                Create New
+              </Button>
             </Box>
           </Paper>
         </Box>
@@ -101,31 +141,47 @@ const Dashboard = () => {
         </Box>
       </Box>
 
-      {/* Bottom Cards (Placeholders) */}
+      {/* Bottom Cards - Quick Actions */}
       <Box display="flex" justifyContent="space-between" px={4} pb={4}>
         <Paper
           elevation={2}
           sx={{
             width: "48%",
-            height: 100,
+            height: 120,
+            p: 2,
             display: "flex",
-            alignItems: "center",
+            flexDirection: "column",
             justifyContent: "center",
+            cursor: "pointer",
+            "&:hover": { bgcolor: "#f5f5f5" },
           }}
+          onClick={() => handleNavigation("/user/search")}
         >
-          <Typography>Quick Actions</Typography>
+          <Typography variant="h6" mb={1}>
+            Quick Search
+          </Typography>
+          <Typography variant="body2">
+            Search through all cases quickly
+          </Typography>
         </Paper>
         <Paper
           elevation={2}
           sx={{
             width: "48%",
-            height: 100,
+            height: 120,
+            p: 2,
             display: "flex",
-            alignItems: "center",
+            flexDirection: "column",
             justifyContent: "center",
+            cursor: "pointer",
+            "&:hover": { bgcolor: "#f5f5f5" },
           }}
+          onClick={() => handleNavigation("/user/categories")}
         >
-          <Typography>Recent Activity</Typography>
+          <Typography variant="h6" mb={1}>
+            Browse Categories
+          </Typography>
+          <Typography variant="body2">Explore cases by category</Typography>
         </Paper>
       </Box>
     </Box>
