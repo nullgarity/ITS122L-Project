@@ -24,7 +24,9 @@ export const useAuth = () => {
   return context;
 };
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -32,8 +34,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const auth = getAuth(app);
 
-    // ✅ DEV BYPASS — insert fake user if in development mode
-    if (import.meta.env.DEV) {
+    // ✅ DEV BYPASS — set to true if you want to skip login during development
+    const useDevBypass = false; // Change this to true to enable dev bypass
+
+    if (process.env.NODE_ENV === "development" && useDevBypass) {
       const fakeUser = {
         uid: "dev123",
         email: "dev@example.com",
@@ -46,7 +50,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    // 🔐 REAL auth for production or when DEV is false
+    // 🔐 REAL auth for production and development (when bypass is disabled)
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setIsAdmin(user?.email?.includes("admin") || false);

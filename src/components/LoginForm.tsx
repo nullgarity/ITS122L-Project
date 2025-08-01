@@ -10,7 +10,7 @@ const LoginForm: React.FC = () => {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, loading } = useAuth();
 
   // Redirect if already logged in
   useEffect(() => {
@@ -18,6 +18,11 @@ const LoginForm: React.FC = () => {
       navigate(isAdmin ? "/admin/dashboard" : "/user/dashboard");
     }
   }, [user, isAdmin, navigate]);
+
+  // Show loading state
+  if (loading) {
+    return <div>Loading authentication...</div>;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
