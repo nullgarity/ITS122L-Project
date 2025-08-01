@@ -1,14 +1,31 @@
-"use client"
-import { useRouter } from "next/router"
-import { useEffect } from "react"
+import React from "react";
+import { Navigate } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
 
-export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const router = useRouter()
-
-  useEffect(() => {
-    const isAuthenticated = !!localStorage.getItem("token") // or use your method
-    if (!isAuthenticated) router.push("/Login")
-  }, [])
-
-  return <>{children}</>
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+  requireAdmin?: boolean;
 }
+
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+  children,
+  requireAdmin = false,
+}) => {
+  const { user, loading, isAdmin } = useAuth();
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (requireAdmin && !isAdmin) {
+    return <Navigate to="/user/dashboard" replace />;
+  }
+
+  return <>{children}</>;
+};
+
+export default ProtectedRoute;
