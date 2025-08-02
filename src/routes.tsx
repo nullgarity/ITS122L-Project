@@ -25,6 +25,14 @@ const routes: RouteObject[] = [
     element: <LoginForm />,
   },
   {
+    path: "/login",
+    element: <LoginForm />,
+  },
+  {
+    path: "/signup",
+    element: <LoginForm />,
+  },
+  {
     path: "/user",
     children: [
       {
@@ -153,6 +161,11 @@ const routes: RouteObject[] = [
         ),
       },
     ],
+  },
+  // Catch-all route - redirect to login
+  {
+    path: "*",
+    element: <LoginForm />,
   },
 ];
 
