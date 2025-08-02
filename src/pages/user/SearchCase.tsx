@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   collection,
   getDocs,
@@ -40,6 +40,7 @@ const SearchCase: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [results, setResults] = useState<CaseItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -48,20 +49,58 @@ const SearchCase: React.FC = () => {
     navigate("/");
   };
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchTerm.trim()) return;
+  // Initialize search from URL parameters
+  useEffect(() => {
+    const categoryParam = searchParams.get("category");
+    const queryParam = searchParams.get("q");
 
+    if (categoryParam) {
+      // Search by category
+      setSearchTerm(categoryParam);
+      performCategorySearch(categoryParam);
+    } else if (queryParam) {
+      // Search by query term
+      setSearchTerm(queryParam);
+      performTextSearch(queryParam);
+    }
+  }, [searchParams]);
+
+  const performCategorySearch = async (category: string) => {
     setLoading(true);
-
     try {
       const casesRef = collection(db, "cases");
+      const q = query(casesRef, where("category", "==", category));
+      const snapshot = await getDocs(q);
+      const matches: CaseItem[] = [];
 
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        matches.push({
+          id: doc.id,
+          title: data.title,
+          category: data.category,
+          date: data.date || data.dateFiled,
+          status: data.status || "open",
+        });
+      });
+
+      setResults(matches);
+    } catch (error) {
+      console.error("Category search error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const performTextSearch = async (searchText: string) => {
+    setLoading(true);
+    try {
+      const casesRef = collection(db, "cases");
       const q = query(
         casesRef,
         orderBy("title"),
-        startAt(searchTerm),
-        endAt(searchTerm + "\uf8ff")
+        startAt(searchText),
+        endAt(searchText + "\uf8ff")
       );
 
       const snapshot = await getDocs(q);
@@ -73,17 +112,24 @@ const SearchCase: React.FC = () => {
           id: doc.id,
           title: data.title,
           category: data.category,
-          date: data.date,
+          date: data.date || data.dateFiled,
           status: data.status || "open",
         });
       });
 
       setResults(matches);
     } catch (error) {
-      console.error("Search error:", error);
+      console.error("Text search error:", error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchTerm.trim()) return;
+
+    performTextSearch(searchTerm.trim());
   };
 
   const getStatusColor = (status: string) => {
@@ -122,6 +168,22 @@ const SearchCase: React.FC = () => {
         <Typography variant="h4" gutterBottom>
           Search Cases
         </Typography>
+
+        {/* Show category filter if active */}
+        {searchParams.get("category") && (
+          <Box mb={2}>
+            <Chip
+              label={`Filtering by: ${searchParams.get("category")}`}
+              color="primary"
+              onDelete={() => {
+                navigate("/user/search");
+                setSearchTerm("");
+                setResults([]);
+              }}
+              sx={{ mb: 2 }}
+            />
+          </Box>
+        )}
 
         <Paper sx={{ p: 3, mb: 3 }}>
           <Box component="form" onSubmit={handleSearch}>
