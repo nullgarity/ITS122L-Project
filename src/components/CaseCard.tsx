@@ -1,5 +1,6 @@
 import React from "react";
-import { Paper, Typography, Box, Button } from "@mui/material";
+import { Paper, Typography, Box, Button, Stack, Divider, Chip } from "@mui/material";
+import DescriptionIcon from "@mui/icons-material/Description";
 
 interface CaseCardProps {
   title: string;
@@ -18,23 +19,42 @@ const CaseCard: React.FC<CaseCardProps> = ({
   lastUpdated,
   category,
   onView,
-  onEdit
+  onEdit,
 }) => {
   return (
-    <Paper elevation={2} sx={{ p: 2, mb: 2 }}>
-      <Typography variant="h6" fontWeight="bold">{title}</Typography>
-      <Typography variant="body2">Filed: {new Date(dateFiled).toLocaleDateString()}</Typography>
-      {lastUpdated && (
-        <Typography variant="body2">Updated: {new Date(lastUpdated).toLocaleString()}</Typography>
-      )}
-      {category && (
-        <Typography variant="body2">Category: {category}</Typography>
-      )}
-      <Typography variant="body2" color="text.secondary">Status: {status}</Typography>
-      <Box display="flex" gap={2} mt={2}>
-        {onView && <Button variant="outlined" onClick={onView}>View Case</Button>}
-        {onEdit && <Button variant="outlined" onClick={onEdit}>Edit</Button>}
-      </Box>
+    <Paper elevation={3} sx={{ p: 3, borderRadius: 2, backgroundColor: "#fafafa" }}>
+      <Stack spacing={1}>
+        <Typography variant="h6" fontWeight="bold" sx={{ color: "#1e88e5" }}>
+          {title}
+        </Typography>
+        <Divider />
+        <Typography variant="body2" color="textSecondary">
+          Filed on: {new Date(dateFiled).toLocaleDateString()}
+        </Typography>
+        {lastUpdated && (
+          <Typography variant="body2" color="textSecondary">
+            Last updated: {new Date(lastUpdated).toLocaleString()}
+          </Typography>
+        )}
+        {category && (
+          <Typography variant="body2" color="textSecondary">
+            Category: {category}
+          </Typography>
+        )}
+        <Chip label={`Status: ${status}`} color="primary" variant="outlined" size="small" />
+        <Box display="flex" justifyContent="flex-end" gap={1} mt={2}>
+          {onView && (
+            <Button variant="contained" size="small" onClick={onView} startIcon={<DescriptionIcon />}>
+              View
+            </Button>
+          )}
+          {onEdit && (
+            <Button variant="outlined" size="small" onClick={onEdit}>
+              Edit
+            </Button>
+          )}
+        </Box>
+      </Stack>
     </Paper>
   );
 };
