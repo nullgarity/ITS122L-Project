@@ -108,7 +108,7 @@ const MyCases: React.FC = () => {
   return (
     <Box>
       {/* Header */}
-      <AppBar position="static" sx={{ bgcolor: "#1976d2" }}>
+      <AppBar position="static" sx={{ bgcolor: "#d32f2f" }}>
         <Toolbar>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             My Cases

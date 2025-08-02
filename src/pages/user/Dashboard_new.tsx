@@ -17,12 +17,12 @@ import {
   InputAdornment,
   IconButton,
 } from "@mui/material";
-import { 
+import {
   Search as SearchIcon,
   Cases as CaseIcon,
   Create as CreateIcon,
   Category as CategoryIcon,
-  Dashboard as DashboardIcon 
+  Dashboard as DashboardIcon,
 } from "@mui/icons-material";
 import { useAuth } from "../../auth/AuthContext";
 import { logout } from "../../services/authService";
@@ -119,7 +119,7 @@ const Dashboard = () => {
           <Typography variant="h4" gutterBottom>
             Welcome to Your Dashboard
           </Typography>
-          
+
           <Paper sx={{ p: 3, mb: 3, bgcolor: "#f5f5f5" }}>
             <Typography variant="h6" gutterBottom>
               Quick Search
@@ -169,11 +169,7 @@ const Dashboard = () => {
                 {userStats.completed}
               </Typography>
               <Typography variant="body1">Completed</Typography>
-              <Chip
-                label="Resolved"
-                size="small"
-                color="success"
-              />
+              <Chip label="Resolved" size="small" color="success" />
             </Paper>
           </Grid>
           <Grid size={{ xs: 12, sm: 6, md: 3 }}>
@@ -222,7 +218,9 @@ const Dashboard = () => {
                 onClick={action.action}
               >
                 <CardContent sx={{ flexGrow: 1, textAlign: "center", p: 3 }}>
-                  <Box sx={{ mb: 2, display: "flex", justifyContent: "center" }}>
+                  <Box
+                    sx={{ mb: 2, display: "flex", justifyContent: "center" }}
+                  >
                     {action.icon}
                   </Box>
                   <Typography variant="h6" component="h2" gutterBottom>
@@ -253,21 +251,26 @@ const Dashboard = () => {
             Recent Activity
           </Typography>
           <Paper sx={{ p: 3 }}>
-            <Typography variant="body1" color="textSecondary" textAlign="center">
+            <Typography
+              variant="body1"
+              color="textSecondary"
+              textAlign="center"
+            >
               Your recent case activities and updates will be displayed here.
               <br />
-              This includes case submissions, status updates, and system notifications.
+              This includes case submissions, status updates, and system
+              notifications.
             </Typography>
             <Box sx={{ mt: 2, display: "flex", justifyContent: "center" }}>
-              <Button 
-                variant="outlined" 
+              <Button
+                variant="outlined"
                 onClick={() => navigate("/user/my-cases")}
                 sx={{ mr: 2 }}
               >
                 View My Cases
               </Button>
-              <Button 
-                variant="contained" 
+              <Button
+                variant="contained"
                 onClick={() => navigate("/user/create-case")}
               >
                 Create New Case
