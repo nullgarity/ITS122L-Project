@@ -1,65 +1,91 @@
-/* General layout for the login page */
+/* Login.css */
+
+body, html {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: url('/path-to-your-background-image.jpg') no-repeat center center fixed;
+  background-size: cover;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Optional dark fade to bottom */
+body::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 150px;
+  background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.7));
+  pointer-events: none;
+  z-index: 1;
+}
+
 .login-container {
+  height: 100vh;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100vh;
-  background-color: #f7f9fc;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  position: relative;
+  z-index: 2;
 }
 
-/* Header title */
-.login-container h1 {
-  margin-bottom: 20px;
-  color: #333;
-}
-
-/* Form box */
 .login-form {
-  background-color: #ffffff;
-  padding: 30px 40px;
-  border-radius: 12px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 16px;
+  padding: 40px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
   width: 100%;
   max-width: 400px;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-/* Input fields */
 .login-form input {
-  width: 100%;
-  padding: 12px 14px;
-  margin-bottom: 16px;
-  border: 1px solid #ccc;
+  padding: 12px 16px;
+  border: none;
   border-radius: 8px;
-  font-size: 16px;
-  transition: border 0.2s ease-in-out;
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+  font-size: 1rem;
+  outline: none;
+  transition: background 0.3s ease;
+}
+
+.login-form input::placeholder {
+  color: #ddd;
 }
 
 .login-form input:focus {
-  outline: none;
-  border-color: #007bff;
+  background: rgba(255, 255, 255, 0.35);
 }
 
-/* Error message */
-.login-form p {
-  color: red;
-  margin-bottom: 16px;
-}
-
-/* Button */
 .login-form button {
-  width: 100%;
   padding: 12px;
-  background-color: #007bff;
-  color: white;
-  font-size: 16px;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: #fff;
   border: none;
   border-radius: 8px;
+  font-size: 1rem;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.3s ease;
 }
 
 .login-form button:hover {
-  background-color: #0056b3;
+  background-color: rgba(0, 0, 0, 0.8);
+}
+
+.login-form p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #ffcccc;
+  text-align: center;
 }

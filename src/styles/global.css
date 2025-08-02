@@ -1,0 +1,99 @@
+/* src/styles/global.css */
+
+/* Reset and base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f4f4f4;
+  color: #333;
+}
+
+/* General container */
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+/* Top navbar */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #ddd;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.9rem;
+}
+
+.navbar input[type="text"] {
+  padding: 0.3rem;
+  width: 200px;
+}
+
+/* Tabs or buttons in header */
+.nav-tabs {
+  display: flex;
+  gap: 1rem;
+}
+
+.nav-tabs button {
+  background: none;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* Buttons */
+button {
+  padding: 0.5rem 1rem;
+  margin: 0.25rem;
+  border: none;
+  background-color: #444;
+  color: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #666;
+}
+
+/* Cards */
+.card {
+  background: #fff;
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 0 5px rgba(0,0,0,0.1);
+  margin: 1rem 0;
+}
+
+/* Inputs */
+input[type="email"],
+input[type="password"],
+input[type="text"],
+select {
+  padding: 0.5rem;
+  margin: 0.5rem 0;
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+/* File upload feedback */
+.file-uploaded {
+  font-size: 0.85rem;
+  color: green;
+  margin-top: 0.25rem;
+}
+
+/* Back and Edit buttons layout */
+.actions-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+}
