@@ -1,475 +1,221 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import {
+  doc,
+  getDoc,
+  updateDoc,
+  deleteDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+  serverTimestamp,
+} from "firebase/firestore";
 import {
   Box,
-  Typography,
   Button,
-  Paper,
-  Card,
-  CardContent,
-  CardActions,
-  AppBar,
-  Toolbar,
-  Grid,
+  Typography,
   TextField,
-  Chip,
-  Menu,
-  MenuItem,
-  IconButton,
   CircularProgress,
-  FormControl,
-  InputLabel,
-  Select,
+  Paper,
+  Divider,
+  Stack,
+  List,
+  ListItem,
+  Link,
 } from "@mui/material";
-import {
-  MoreVert as MoreVertIcon,
-  Add as AddIcon,
-  Search as SearchIcon,
-  FilterList as FilterListIcon,
-} from "@mui/icons-material";
-import { collection, getDocs, query, orderBy, where } from "firebase/firestore";
+
 import { db } from "../../services/firebase";
 import { useAuth } from "../../auth/AuthContext";
-import { logout } from "../../services/authService";
+import FileUploader from "../../components/FileUploader";
+import { Case } from "../../types/Case";
 
-interface CaseItem {
-  id: string;
-  title: string;
-  category: string;
-  dateFiled: string;
-  status: string;
-  priority?: string;
-  assignedTo?: string;
-  createdAt?: any;
-  updatedAt?: any;
+interface FileRecord {
+  fileName: string;
+  url: string;
 }
 
-const ManageCases: React.FC = () => {
-  const { user } = useAuth();
+const ManageCase: React.FC = () => {
+  const { id } = useParams();
   const navigate = useNavigate();
-  const [cases, setCases] = useState<CaseItem[]>([]);
-  const [filteredCases, setFilteredCases] = useState<CaseItem[]>([]);
+  const { user } = useAuth();
+  const [caseData, setCaseData] = useState<Case | null>(null);
+  const [files, setFiles] = useState<FileRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
-  const [categoryFilter, setCategoryFilter] = useState("All");
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [selectedCase, setSelectedCase] = useState<string | null>(null);
-
-  const handleLogout = async () => {
-    await logout();
-    navigate("/");
-  };
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchCases = async () => {
-      setLoading(true);
+    const fetchUserRole = async () => {
+      if (user) {
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          const data = userSnap.data();
+          setUserRole(data.role || null);
+        }
+      }
+    };
+
+    fetchUserRole();
+  }, [user]);
+
+  useEffect(() => {
+    const loadCase = async () => {
       try {
-        const casesRef = collection(db, "cases");
-        const q = query(casesRef, orderBy("createdAt", "desc"));
-        const snapshot = await getDocs(q);
-        const casesData: CaseItem[] = [];
+        const docRef = doc(db, "cases", id!);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          setCaseData(docSnap.data() as Case);
+        }
 
-        snapshot.forEach((doc) => {
+        const q = query(collection(db, "caseFiles"), where("caseId", "==", id));
+        const fileSnap = await getDocs(q);
+        const fetchedFiles: FileRecord[] = [];
+        fileSnap.forEach((doc) => {
           const data = doc.data();
-          casesData.push({
-            id: doc.id,
-            title: data.title,
-            category: data.category,
-            dateFiled: data.dateFiled || data.date,
-            status: data.status || "Open",
-            priority: data.priority || "Medium",
-            assignedTo: data.assignedTo,
-            createdAt: data.createdAt,
-            updatedAt: data.updatedAt,
-          });
+          fetchedFiles.push({ fileName: data.fileName, url: data.url });
         });
-
-        setCases(casesData);
-        setFilteredCases(casesData);
+        setFiles(fetchedFiles);
       } catch (error) {
-        console.error("Error fetching cases:", error);
+        console.error("Error loading case:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchCases();
-  }, []);
+    loadCase();
+  }, [id]);
 
-  useEffect(() => {
-    let filtered = cases;
-
-    // Apply search filter
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (caseItem) =>
-          caseItem.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          caseItem.category.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Apply status filter
-    if (statusFilter !== "All") {
-      filtered = filtered.filter(
-        (caseItem) => caseItem.status === statusFilter
-      );
-    }
-
-    // Apply category filter
-    if (categoryFilter !== "All") {
-      filtered = filtered.filter(
-        (caseItem) => caseItem.category === categoryFilter
-      );
-    }
-
-    setFilteredCases(filtered);
-  }, [cases, searchTerm, statusFilter, categoryFilter]);
-
-  const handleMenuClick = (
-    event: React.MouseEvent<HTMLElement>,
-    caseId: string
-  ) => {
-    setAnchorEl(event.currentTarget);
-    setSelectedCase(caseId);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-    setSelectedCase(null);
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case "completed":
-      case "closed":
-        return "success";
-      case "in progress":
-      case "active":
-        return "info";
-      case "pending":
-        return "warning";
-      case "open":
-        return "primary";
-      default:
-        return "default";
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!caseData) return;
+    try {
+      const docRef = doc(db, "cases", id!);
+      await updateDoc(docRef, {
+        ...caseData,
+        lastUpdated: serverTimestamp(),
+      });
+      alert("Case updated.");
+    } catch (error) {
+      console.error("Update failed:", error);
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority?.toLowerCase()) {
-      case "critical":
-        return "error";
-      case "high":
-        return "warning";
-      case "medium":
-        return "info";
-      case "low":
-        return "success";
-      default:
-        return "default";
+  const handleDelete = async () => {
+    if (!confirm("Are you sure you want to delete this case?")) return;
+    try {
+      await deleteDoc(doc(db, "cases", id!));
+      alert("Case deleted.");
+      navigate("/admin/manage-cases");
+    } catch (error) {
+      console.error("Delete failed:", error);
     }
   };
 
-  if (loading) {
-    return (
-      <Box>
-        <AppBar position="static" sx={{ bgcolor: "#d32f2f" }}>
-          <Toolbar>
-            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-              Admin - Manage Cases
-            </Typography>
-            <Button color="inherit" onClick={handleLogout}>
-              Logout
-            </Button>
-          </Toolbar>
-        </AppBar>
-        <Box display="flex" justifyContent="center" alignItems="center" p={4}>
-          <CircularProgress />
-          <Typography ml={2}>Loading cases...</Typography>
-        </Box>
-      </Box>
-    );
+  if (loading || userRole === null) {
+    return <Box display="flex" justifyContent="center" mt={10}><CircularProgress /></Box>;
   }
-  return (
-    <Box>
-      {/* Header */}
-      <AppBar position="static" sx={{ bgcolor: "#d32f2f" }}>
-        <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Admin - Manage Cases
-          </Typography>
-          <Button color="inherit" onClick={() => navigate("/admin/dashboard")}>
-            Dashboard
-          </Button>
-          <Button color="inherit" onClick={() => navigate("/admin/users")}>
-            Manage Users
-          </Button>
-          <Button color="inherit" onClick={handleLogout}>
-            Logout
-          </Button>
-        </Toolbar>
-      </AppBar>
 
-      <Box p={3}>
-        <Box
-          display="flex"
-          justifyContent="space-between"
-          alignItems="center"
-          mb={3}
-        >
-          <Typography variant="h4">
-            Manage Cases ({filteredCases.length})
-          </Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => navigate("/admin/create-case")}
-          >
-            Create New Case
-          </Button>
+  if (!caseData) {
+    return <Typography mt={4} textAlign="center">Case not found.</Typography>;
+  }
+
+  if (userRole !== "admin") {
+    return <Typography mt={4} textAlign="center">Unauthorized Access</Typography>;
+  }
+
+  return (
+    <Box maxWidth="md" mx="auto" mt={5}>
+      <Paper elevation={3} sx={{ p: 4 }}>
+        <Typography variant="h5" fontWeight="bold" mb={2}>
+          Admin Manage Case
+        </Typography>
+        <Button variant="text" onClick={() => navigate(-1)} sx={{ mb: 3 }}>
+          ← Back to Manage Cases
+        </Button>
+
+        <Box component="form" onSubmit={handleUpdate}>
+          <TextField
+            label="Case Number"
+            value={caseData.caseNumber}
+            onChange={(e) => setCaseData({ ...caseData, caseNumber: e.target.value })}
+            fullWidth margin="normal"
+          />
+          <TextField
+            label="Title"
+            value={caseData.caseTitle}
+            onChange={(e) => setCaseData({ ...caseData, caseTitle: e.target.value })}
+            fullWidth margin="normal"
+          />
+          <TextField
+            label="Type"
+            value={caseData.caseType}
+            onChange={(e) => setCaseData({ ...caseData, caseType: e.target.value })}
+            fullWidth margin="normal"
+          />
+          <TextField
+            label="Plaintiff"
+            value={caseData.participants.plaintiff}
+            onChange={(e) =>
+              setCaseData({
+                ...caseData,
+                participants: { ...caseData.participants, plaintiff: e.target.value },
+              })
+            }
+            fullWidth margin="normal"
+          />
+          <TextField
+            label="Defendant"
+            value={caseData.participants.defendant}
+            onChange={(e) =>
+              setCaseData({
+                ...caseData,
+                participants: { ...caseData.participants, defendant: e.target.value },
+              })
+            }
+            fullWidth margin="normal"
+          />
+          <TextField
+            label="Status"
+            value={caseData.status}
+            onChange={(e) => setCaseData({ ...caseData, status: e.target.value })}
+            fullWidth margin="normal"
+          />
+
+          <Stack direction="row" spacing={2} mt={3}>
+            <Button type="submit" variant="contained" color="primary">
+              Update
+            </Button>
+            <Button variant="contained" color="error" onClick={handleDelete}>
+              Delete
+            </Button>
+          </Stack>
         </Box>
 
-        {/* Filters and Search */}
-        <Paper sx={{ p: 3, mb: 3 }}>
-          <Grid container spacing={3} alignItems="center">
-            <Grid size={{ xs: 12, md: 4 }}>
-              <TextField
-                fullWidth
-                label="Search Cases"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search by title or category..."
-                InputProps={{
-                  startAdornment: (
-                    <SearchIcon sx={{ mr: 1, color: "action.active" }} />
-                  ),
-                }}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, md: 3 }}>
-              <FormControl fullWidth>
-                <InputLabel>Status Filter</InputLabel>
-                <Select
-                  value={statusFilter}
-                  label="Status Filter"
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                >
-                  <MenuItem value="All">All Statuses</MenuItem>
-                  <MenuItem value="Open">Open</MenuItem>
-                  <MenuItem value="In Progress">In Progress</MenuItem>
-                  <MenuItem value="Pending">Pending</MenuItem>
-                  <MenuItem value="Completed">Completed</MenuItem>
-                  <MenuItem value="Closed">Closed</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid size={{ xs: 12, md: 3 }}>
-              <FormControl fullWidth>
-                <InputLabel>Category Filter</InputLabel>
-                <Select
-                  value={categoryFilter}
-                  label="Category Filter"
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                >
-                  <MenuItem value="All">All Categories</MenuItem>
-                  <MenuItem value="Criminal Law">Criminal Law</MenuItem>
-                  <MenuItem value="Civil Law">Civil Law</MenuItem>
-                  <MenuItem value="Family Law">Family Law</MenuItem>
-                  <MenuItem value="Corporate Law">Corporate Law</MenuItem>
-                  <MenuItem value="Constitutional Law">
-                    Constitutional Law
-                  </MenuItem>
-                  <MenuItem value="Labor Law">Labor Law</MenuItem>
-                  <MenuItem value="Tax Law">Tax Law</MenuItem>
-                  <MenuItem value="Other">Other</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid size={{ xs: 12, md: 2 }}>
-              <Button
-                variant="outlined"
-                fullWidth
-                startIcon={<FilterListIcon />}
-                onClick={() => {
-                  setSearchTerm("");
-                  setStatusFilter("All");
-                  setCategoryFilter("All");
-                }}
-              >
-                Clear Filters
-              </Button>
-            </Grid>
-          </Grid>
-        </Paper>
+        <Divider sx={{ my: 4 }} />
 
-        {/* Cases List */}
-        {filteredCases.length === 0 ? (
-          <Paper sx={{ p: 4, textAlign: "center" }}>
-            <Typography variant="h6" color="textSecondary" mb={2}>
-              No cases found
-            </Typography>
-            <Typography variant="body2" color="textSecondary" mb={3}>
-              {searchTerm || statusFilter !== "All" || categoryFilter !== "All"
-                ? "Try adjusting your search filters"
-                : "No cases have been created yet"}
-            </Typography>
-            <Button
-              variant="contained"
-              onClick={() => navigate("/admin/create-case")}
-            >
-              Create First Case
-            </Button>
-          </Paper>
+        <Typography variant="h6">Uploaded Files</Typography>
+        {files.length === 0 ? (
+          <Typography color="text.secondary">No files uploaded.</Typography>
         ) : (
-          <Grid container spacing={3}>
-            {filteredCases.map((caseItem) => (
-              <Grid size={{ xs: 12, md: 6, lg: 4 }} key={caseItem.id}>
-                <Card
-                  sx={{
-                    height: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                    transition: "all 0.2s",
-                    "&:hover": {
-                      transform: "translateY(-2px)",
-                      boxShadow: 4,
-                    },
-                  }}
-                >
-                  <CardContent sx={{ flexGrow: 1 }}>
-                    <Box
-                      display="flex"
-                      justifyContent="space-between"
-                      alignItems="flex-start"
-                      mb={1}
-                    >
-                      <Typography
-                        variant="h6"
-                        component="h2"
-                        sx={{ flexGrow: 1, pr: 1 }}
-                      >
-                        {caseItem.title}
-                      </Typography>
-                      <IconButton
-                        size="small"
-                        onClick={(e) => handleMenuClick(e, caseItem.id)}
-                      >
-                        <MoreVertIcon />
-                      </IconButton>
-                    </Box>
-
-                    <Typography
-                      variant="body2"
-                      color="textSecondary"
-                      gutterBottom
-                    >
-                      Category: {caseItem.category}
-                    </Typography>
-
-                    <Typography
-                      variant="body2"
-                      color="textSecondary"
-                      gutterBottom
-                    >
-                      Filed: {new Date(caseItem.dateFiled).toLocaleDateString()}
-                    </Typography>
-
-                    {caseItem.assignedTo && (
-                      <Typography
-                        variant="body2"
-                        color="textSecondary"
-                        gutterBottom
-                      >
-                        Assigned to: {caseItem.assignedTo}
-                      </Typography>
-                    )}
-
-                    <Box display="flex" gap={1} flexWrap="wrap" mt={2}>
-                      <Chip
-                        label={caseItem.status}
-                        color={getStatusColor(caseItem.status) as any}
-                        size="small"
-                      />
-                      {caseItem.priority && (
-                        <Chip
-                          label={`${caseItem.priority} Priority`}
-                          color={getPriorityColor(caseItem.priority) as any}
-                          size="small"
-                          variant="outlined"
-                        />
-                      )}
-                    </Box>
-                  </CardContent>
-
-                  <CardActions sx={{ justifyContent: "space-between", p: 2 }}>
-                    <Button
-                      size="small"
-                      onClick={() =>
-                        navigate(`/admin/view-case/${caseItem.id}`)
-                      }
-                    >
-                      View Details
-                    </Button>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={() =>
-                        navigate(`/admin/manage-case/${caseItem.id}`)
-                      }
-                    >
-                      Edit
-                    </Button>
-                  </CardActions>
-                </Card>
-              </Grid>
+          <List>
+            {files.map((file, idx) => (
+              <ListItem key={idx}>
+                <Link href={file.url} target="_blank" rel="noopener noreferrer">
+                  {file.fileName}
+                </Link>
+              </ListItem>
             ))}
-          </Grid>
+          </List>
         )}
 
-        {/* Context Menu */}
-        <Menu
-          anchorEl={anchorEl}
-          open={Boolean(anchorEl)}
-          onClose={handleMenuClose}
-        >
-          <MenuItem
-            onClick={() => {
-              navigate(`/admin/view-case/${selectedCase}`);
-              handleMenuClose();
-            }}
-          >
-            View Details
-          </MenuItem>
-          <MenuItem
-            onClick={() => {
-              navigate(`/admin/manage-case/${selectedCase}`);
-              handleMenuClose();
-            }}
-          >
-            Edit Case
-          </MenuItem>
-          <MenuItem
-            onClick={() => {
-              // TODO: Implement duplicate functionality
-              handleMenuClose();
-            }}
-          >
-            Duplicate Case
-          </MenuItem>
-          <MenuItem
-            onClick={() => {
-              // TODO: Implement archive functionality
-              handleMenuClose();
-            }}
-            sx={{ color: "error.main" }}
-          >
-            Archive Case
-          </MenuItem>
-        </Menu>
-      </Box>
+        <Divider sx={{ my: 3 }} />
+
+        <Typography variant="h6">Upload More Files</Typography>
+        <FileUploader caseId={id!} onUploadSuccess={() => window.location.reload()} />
+      </Paper>
     </Box>
   );
 };
 
-export default ManageCases;
+export default ManageCase;

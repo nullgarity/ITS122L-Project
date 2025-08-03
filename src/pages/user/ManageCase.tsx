@@ -1,33 +1,21 @@
-// src/pages/user/ManageCase.tsx
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   doc,
   getDoc,
-  updateDoc,
-  deleteDoc,
   collection,
   query,
   where,
   getDocs,
-  serverTimestamp,
 } from "firebase/firestore";
 import {
-  Box,
-  Button,
-  Typography,
-  TextField,
-  CircularProgress,
-  Paper,
-  Divider,
-  Stack,
-  List,
-  ListItem,
-  Link,
+  Box, Button, Typography, CircularProgress, Paper, Divider,
+  List, ListItem, Link,
 } from "@mui/material";
 import { db } from "../../services/firebase";
 import { useAuth } from "../../auth/AuthContext";
 import FileUploader from "../../components/FileUploader";
+import { Case } from "../../types/Case";
 
 interface FileRecord {
   fileName: string;
@@ -35,82 +23,78 @@ interface FileRecord {
 }
 
 const ManageCase: React.FC = () => {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("");
-  const [dateFiled, setDateFiled] = useState("");
+  const [caseData, setCaseData] = useState<Case | null>(null);
   const [files, setFiles] = useState<FileRecord[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const isAdmin = user?.role === "admin";
+  const [authorized, setAuthorized] = useState<boolean | null>(null);
 
   useEffect(() => {
     const loadCase = async () => {
+      if (!user) return;
+
       try {
-        const docRef = doc(db, "cases", id!);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          setTitle(data.title);
-          setCategory(data.category);
-          setDateFiled(data.dateFiled);
+        // Step 1: Fetch Firestore user
+        const userDocRef = doc(db, "users", user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+
+        if (!userDocSnap.exists()) {
+          console.error("User profile not found in Firestore.");
+          setAuthorized(false);
+          return;
         }
 
-        const q = query(collection(db, "caseFiles"), where("caseId", "==", id));
-        const fileSnap = await getDocs(q);
-        const fetchedFiles: FileRecord[] = [];
+        const userData = userDocSnap.data();
+        const authorizedCases: string[] = userData.authorizedCases
+          ? userData.authorizedCases.split(",").map((c: string) => c.trim())
+          : [];
+
+        if (!authorizedCases.includes(id!)) {
+          setAuthorized(false);
+          return;
+        }
+
+        // Step 2: Fetch case data
+        const caseDoc = await getDoc(doc(db, "cases", id!));
+        if (!caseDoc.exists()) {
+          setAuthorized(false);
+          return;
+        }
+        setCaseData(caseDoc.data() as Case);
+        setAuthorized(true);
+
+        // Step 3: Fetch case files
+        const fileQuery = query(collection(db, "caseFiles"), where("caseId", "==", id));
+        const fileSnap = await getDocs(fileQuery);
+        const fileList: FileRecord[] = [];
         fileSnap.forEach((doc) => {
           const data = doc.data();
-          fetchedFiles.push({ fileName: data.fileName, url: data.url });
+          fileList.push({ fileName: data.fileName, url: data.url });
         });
-        setFiles(fetchedFiles);
+        setFiles(fileList);
       } catch (error) {
-        console.error("Error loading case:", error);
+        console.error("Error loading case data:", error);
+        setAuthorized(false);
       } finally {
         setLoading(false);
       }
     };
 
     loadCase();
-  }, [id]);
-
-  const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const docRef = doc(db, "cases", id!);
-      await updateDoc(docRef, {
-        title,
-        category,
-        dateFiled,
-        updatedAt: serverTimestamp(),
-      });
-      alert("Case updated.");
-    } catch (error) {
-      console.error("Update failed:", error);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this case?")) return;
-    try {
-      const docRef = doc(db, "cases", id!);
-      await deleteDoc(docRef);
-      alert("Case deleted.");
-      navigate("/user/my-cases");
-    } catch (error) {
-      console.error("Delete failed:", error);
-    }
-  };
+  }, [id, user]);
 
   if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
-        <CircularProgress />
-        <Typography ml={2}>Loading case...</Typography>
-      </Box>
-    );
+    return <Box display="flex" justifyContent="center" mt={10}><CircularProgress /></Box>;
+  }
+
+  if (authorized === false) {
+    return <Typography mt={4} textAlign="center">403 - You are not authorized to view this case.</Typography>;
+  }
+
+  if (!caseData) {
+    return <Typography mt={4} textAlign="center">Case not found.</Typography>;
   }
 
   return (
@@ -120,61 +104,26 @@ const ManageCase: React.FC = () => {
           Manage Case
         </Typography>
         <Button variant="text" onClick={() => navigate(-1)} sx={{ mb: 3 }}>
-          ← Back to My Cases
+          ← Back
         </Button>
 
-        {isAdmin ? (
-          <Box component="form" onSubmit={handleUpdate}>
-            <TextField
-              label="Case Title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              fullWidth
-              margin="normal"
-            />
-            <TextField
-              label="Category"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              fullWidth
-              margin="normal"
-            />
-            <TextField
-              label="Date Filed"
-              type="date"
-              value={dateFiled}
-              onChange={(e) => setDateFiled(e.target.value)}
-              fullWidth
-              margin="normal"
-              InputLabelProps={{ shrink: true }}
-            />
+        <Typography><strong>Case Number:</strong> {caseData.caseNumber}</Typography>
+        <Typography><strong>Title:</strong> {caseData.caseTitle}</Typography>
+        <Typography><strong>Type:</strong> {caseData.caseType}</Typography>
+        <Typography><strong>Date Filed:</strong> {caseData.dateFiled.toDate().toDateString()}</Typography>
+        <Typography><strong>Status:</strong> {caseData.status}</Typography>
+        <Typography><strong>Plaintiff:</strong> {caseData.participants.plaintiff}</Typography>
+        <Typography><strong>Defendant:</strong> {caseData.participants.defendant}</Typography>
 
-            <Stack direction="row" spacing={2} mt={3}>
-              <Button type="submit" variant="contained" color="primary">
-                Update
-              </Button>
-              <Button variant="contained" color="error" onClick={handleDelete}>
-                Delete
-              </Button>
-            </Stack>
-          </Box>
-        ) : (
-          <Typography color="text.secondary" mt={2}>
-            You do not have permission to edit this case.
-          </Typography>
-        )}
+        <Divider sx={{ my: 3 }} />
 
-        <Divider sx={{ my: 4 }} />
-
-        <Typography variant="h6" mb={1}>
-          Uploaded PDF Files
-        </Typography>
+        <Typography variant="h6">Uploaded Files</Typography>
         {files.length === 0 ? (
-          <Typography color="text.secondary">No files uploaded for this case.</Typography>
+          <Typography color="text.secondary">No files uploaded.</Typography>
         ) : (
           <List>
-            {files.map((file, index) => (
-              <ListItem key={index}>
+            {files.map((file, idx) => (
+              <ListItem key={idx}>
                 <Link href={file.url} target="_blank" rel="noopener noreferrer">
                   {file.fileName}
                 </Link>
@@ -183,20 +132,10 @@ const ManageCase: React.FC = () => {
           </List>
         )}
 
-        <Divider sx={{ my: 4 }} />
+        <Divider sx={{ my: 3 }} />
 
-        <Typography variant="h6" mb={1}>
-          Upload More Files
-        </Typography>
-        {id && (
-          <FileUploader
-            caseId={id}
-            onUploadSuccess={() => {
-              alert("Upload successful!");
-              window.location.reload();
-            }}
-          />
-        )}
+        <Typography variant="h6">Upload More Files</Typography>
+        <FileUploader caseId={id!} onUploadSuccess={() => window.location.reload()} />
       </Paper>
     </Box>
   );
