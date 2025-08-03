@@ -1,29 +1,71 @@
 // src/pages/user/ManageCase.tsx
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  updateDoc,
+  deleteDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+  serverTimestamp,
+} from "firebase/firestore";
+import {
+  Box,
+  Button,
+  Typography,
+  TextField,
+  CircularProgress,
+  Paper,
+  Divider,
+  Stack,
+  List,
+  ListItem,
+  Link,
+} from "@mui/material";
 import { db } from "../../services/firebase";
+import { useAuth } from "../../auth/AuthContext";
+import FileUploader from "../../components/FileUploader";
+
+interface FileRecord {
+  fileName: string;
+  url: string;
+}
 
 const ManageCase: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
-  const [date, setDate] = useState("");
+  const [dateFiled, setDateFiled] = useState("");
+  const [files, setFiles] = useState<FileRecord[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const isAdmin = user?.role === "admin";
 
   useEffect(() => {
     const loadCase = async () => {
       try {
         const docRef = doc(db, "cases", id!);
         const docSnap = await getDoc(docRef);
-
         if (docSnap.exists()) {
           const data = docSnap.data();
           setTitle(data.title);
           setCategory(data.category);
-          setDate(data.date);
+          setDateFiled(data.dateFiled);
         }
+
+        const q = query(collection(db, "caseFiles"), where("caseId", "==", id));
+        const fileSnap = await getDocs(q);
+        const fetchedFiles: FileRecord[] = [];
+        fileSnap.forEach((doc) => {
+          const data = doc.data();
+          fetchedFiles.push({ fileName: data.fileName, url: data.url });
+        });
+        setFiles(fetchedFiles);
       } catch (error) {
         console.error("Error loading case:", error);
       } finally {
@@ -41,8 +83,8 @@ const ManageCase: React.FC = () => {
       await updateDoc(docRef, {
         title,
         category,
-        date,
-        updatedAt: new Date(),
+        dateFiled,
+        updatedAt: serverTimestamp(),
       });
       alert("Case updated.");
     } catch (error) {
@@ -56,70 +98,107 @@ const ManageCase: React.FC = () => {
       const docRef = doc(db, "cases", id!);
       await deleteDoc(docRef);
       alert("Case deleted.");
-      navigate("/my-cases");
+      navigate("/user/my-cases");
     } catch (error) {
       console.error("Delete failed:", error);
     }
   };
 
-  if (loading) return <p className="p-6">Loading...</p>;
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
+        <CircularProgress />
+        <Typography ml={2}>Loading case...</Typography>
+      </Box>
+    );
+  }
 
   return (
-    <form
-      onSubmit={handleUpdate}
-      className="bg-white p-6 max-w-2xl mx-auto rounded shadow"
-    >
-      <h2 className="text-2xl font-semibold mb-4">Manage Case</h2>
+    <Box maxWidth="md" mx="auto" mt={5}>
+      <Paper elevation={3} sx={{ p: 4 }}>
+        <Typography variant="h5" fontWeight="bold" mb={2}>
+          Manage Case
+        </Typography>
+        <Button variant="text" onClick={() => navigate(-1)} sx={{ mb: 3 }}>
+          ← Back to My Cases
+        </Button>
 
-      <div className="mb-4">
-        <label className="block font-medium mb-1">Title</label>
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="w-full px-4 py-2 border rounded"
-          required
-        />
-      </div>
+        {isAdmin ? (
+          <Box component="form" onSubmit={handleUpdate}>
+            <TextField
+              label="Case Title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              fullWidth
+              margin="normal"
+            />
+            <TextField
+              label="Category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              fullWidth
+              margin="normal"
+            />
+            <TextField
+              label="Date Filed"
+              type="date"
+              value={dateFiled}
+              onChange={(e) => setDateFiled(e.target.value)}
+              fullWidth
+              margin="normal"
+              InputLabelProps={{ shrink: true }}
+            />
 
-      <div className="mb-4">
-        <label className="block font-medium mb-1">Category</label>
-        <input
-          type="text"
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          className="w-full px-4 py-2 border rounded"
-          required
-        />
-      </div>
+            <Stack direction="row" spacing={2} mt={3}>
+              <Button type="submit" variant="contained" color="primary">
+                Update
+              </Button>
+              <Button variant="contained" color="error" onClick={handleDelete}>
+                Delete
+              </Button>
+            </Stack>
+          </Box>
+        ) : (
+          <Typography color="text.secondary" mt={2}>
+            You do not have permission to edit this case.
+          </Typography>
+        )}
 
-      <div className="mb-6">
-        <label className="block font-medium mb-1">Date</label>
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          className="w-full px-4 py-2 border rounded"
-          required
-        />
-      </div>
+        <Divider sx={{ my: 4 }} />
 
-      <div className="flex gap-4">
-        <button
-          type="submit"
-          className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
-        >
-          Update
-        </button>
-        <button
-          type="button"
-          onClick={handleDelete}
-          className="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700"
-        >
-          Delete
-        </button>
-      </div>
-    </form>
+        <Typography variant="h6" mb={1}>
+          Uploaded PDF Files
+        </Typography>
+        {files.length === 0 ? (
+          <Typography color="text.secondary">No files uploaded for this case.</Typography>
+        ) : (
+          <List>
+            {files.map((file, index) => (
+              <ListItem key={index}>
+                <Link href={file.url} target="_blank" rel="noopener noreferrer">
+                  {file.fileName}
+                </Link>
+              </ListItem>
+            ))}
+          </List>
+        )}
+
+        <Divider sx={{ my: 4 }} />
+
+        <Typography variant="h6" mb={1}>
+          Upload More Files
+        </Typography>
+        {id && (
+          <FileUploader
+            caseId={id}
+            onUploadSuccess={() => {
+              alert("Upload successful!");
+              window.location.reload();
+            }}
+          />
+        )}
+      </Paper>
+    </Box>
   );
 };
 
