@@ -15,7 +15,7 @@ import { useAuth } from "../../auth/AuthContext";
 import { logout } from "../../services/authService";
 import CaseCard from "../../components/CaseCard";
 
-interface CaseItem {
+interface CaseItem {  
   id: string;
   title: string;
   category: string;

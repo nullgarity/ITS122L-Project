@@ -49,6 +49,7 @@ import {
   getDocs,
   query,
   where,
+  Timestamp,
 } from "firebase/firestore";
 import { db } from "../../services/firebase";
 import { useAuth } from "../../auth/AuthContext";
@@ -56,16 +57,22 @@ import { logout } from "../../services/authService";
 
 interface CaseData {
   id: string;
-  title: string;
-  category: string;
-  dateFiled: string;
+  caseNumber: string;
+  caseTitle: string;
+  caseType: string;
   status: string;
+  authorizedUsers: string[];
+  fileIds: string[];
+  filedBy: string;
+  dateFiled: Timestamp;
+  lastUpdated: Timestamp;
+  participants: {
+    plaintiff: string;
+    defendant: string;
+  };
   priority?: string;
   assignedTo?: string;
   description?: string;
-  createdBy?: string;
-  createdAt?: any;
-  updatedAt?: any;
 }
 
 interface CaseFile {
@@ -99,18 +106,17 @@ const ViewCase: React.FC = () => {
 
       setLoading(true);
       try {
-        // Fetch case data
         const caseDoc = await getDoc(doc(db, "cases", id));
         if (caseDoc.exists()) {
-          setCaseData({ id: caseDoc.id, ...caseDoc.data() } as CaseData);
-          setNewStatus(caseDoc.data().status || "Open");
-          setNewPriority(caseDoc.data().priority || "Medium");
-          setNewAssignee(caseDoc.data().assignedTo || "");
+          const caseInfo = { id: caseDoc.id, ...caseDoc.data() } as CaseData;
+          setCaseData(caseInfo);
+          setNewStatus(caseInfo.status || "Open");
+          setNewPriority(caseInfo.priority || "Medium");
+          setNewAssignee(caseInfo.assignedTo || "");
         } else {
           setError("Case not found");
         }
 
-        // Fetch case files
         const filesQuery = query(
           collection(db, "caseFiles"),
           where("caseId", "==", id)
@@ -140,7 +146,7 @@ const ViewCase: React.FC = () => {
         status: newStatus,
         priority: newPriority,
         assignedTo: newAssignee,
-        updatedAt: new Date(),
+        lastUpdated: Timestamp.now(),
       });
 
       setCaseData({
@@ -148,6 +154,7 @@ const ViewCase: React.FC = () => {
         status: newStatus,
         priority: newPriority,
         assignedTo: newAssignee,
+        lastUpdated: Timestamp.now(),
       });
 
       setEditDialogOpen(false);
@@ -261,7 +268,7 @@ const ViewCase: React.FC = () => {
           <Grid container spacing={3} alignItems="center">
             <Grid size={{ xs: 12, md: 8 }}>
               <Typography variant="h4" gutterBottom>
-                {caseData.title}
+                {caseData.caseTitle}
               </Typography>
               <Box display="flex" gap={1} flexWrap="wrap" mb={2}>
                 <Chip
@@ -273,7 +280,7 @@ const ViewCase: React.FC = () => {
                   color={getPriorityColor(caseData.priority || "Medium") as any}
                   variant="outlined"
                 />
-                <Chip label={caseData.category} variant="outlined" />
+                <Chip label={caseData.caseType} variant="outlined" />
               </Box>
             </Grid>
             <Grid size={{ xs: 12, md: 4 }}>
@@ -317,7 +324,7 @@ const ViewCase: React.FC = () => {
                     </ListItemIcon>
                     <ListItemText
                       primary="Case Title"
-                      secondary={caseData.title}
+                      secondary={caseData.caseTitle}
                     />
                   </ListItem>
 
@@ -327,7 +334,7 @@ const ViewCase: React.FC = () => {
                     </ListItemIcon>
                     <ListItemText
                       primary="Category"
-                      secondary={caseData.category}
+                      secondary={caseData.caseType}
                     />
                   </ListItem>
 
@@ -337,9 +344,7 @@ const ViewCase: React.FC = () => {
                     </ListItemIcon>
                     <ListItemText
                       primary="Date Filed"
-                      secondary={new Date(
-                        caseData.dateFiled
-                      ).toLocaleDateString()}
+                      secondary={caseData.dateFiled.toDate().toLocaleDateString()}
                     />
                   </ListItem>
 
@@ -485,21 +490,12 @@ const ViewCase: React.FC = () => {
                 <Divider sx={{ mb: 2 }} />
 
                 <List dense>
-                  <ListItem>
-                    <ListItemText
-                      primary="Case Created"
-                      secondary={
-                        caseData.createdAt?.toDate?.()?.toLocaleDateString() ||
-                        "Unknown"
-                      }
-                    />
-                  </ListItem>
-                  {caseData.updatedAt && (
+                  {caseData.lastUpdated && (
                     <ListItem>
                       <ListItemText
                         primary="Last Updated"
                         secondary={
-                          caseData.updatedAt
+                          caseData.lastUpdated
                             ?.toDate?.()
                             ?.toLocaleDateString() || "Unknown"
                         }
