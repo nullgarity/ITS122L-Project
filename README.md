@@ -2,6 +2,10 @@
 
 A web application for managing legal cases with role-based access for users and administrators.
 
+## Deployment
+
+The original deployment is no longer active. The project was developed as an academic project and its original hosting environment has since been retired.
+
 ## Tech Stack
 
 - React
@@ -22,12 +26,6 @@ A web application for managing legal cases with role-based access for users and 
 - Admin dashboard
 - Administrative case management
 - User management and user search
-
-## My Role
-
-**Lead Developer**
-
-Led the development of the application and contributed to its frontend implementation, Firebase integration, authentication flows, case-management functionality, and administrative interfaces.
 
 ## Getting Started
 
